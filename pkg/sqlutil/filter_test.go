@@ -13,7 +13,7 @@ import (
 )
 
 func TestUseStringFilter(t *testing.T) {
-	db.Reset()
+	assert.NoError(t, db.Reset())
 	resetTestTable(db)
 
 	t.Run(`.Is == ".Is"`, func(t *testing.T) {
@@ -228,7 +228,7 @@ func mustUseStringFilter(t *testing.T, db *storage.DB, testCase string, filter s
 }
 
 func TestUseIntFilter(t *testing.T) {
-	db.Reset()
+	assert.NoError(t, db.Reset())
 	resetTestTable(db)
 
 	t.Run(`.Is == 137`, func(t *testing.T) {
@@ -389,7 +389,7 @@ func mustUseIntFilter(t *testing.T, db *storage.DB, testCase string, filter sqlu
 }
 
 func TestUseTimeFilter(t *testing.T) {
-	db.Reset()
+	assert.NoError(t, db.Reset())
 	resetTestTable(db)
 
 	t.Run(`.Before == time.Now()`, func(t *testing.T) {
@@ -452,7 +452,7 @@ func mustUseTimeFilter(t *testing.T, db *storage.DB, testCase string, filter sql
 }
 
 func TestUseBoolFilter(t *testing.T) {
-	db.Reset()
+	assert.NoError(t, db.Reset())
 	resetTestTable(db)
 
 	t.Run(`.Is == true`, func(t *testing.T) {
@@ -501,7 +501,7 @@ type testRowFilter struct {
 }
 
 func TestUseStructFilter(t *testing.T) {
-	db.Reset()
+	assert.NoError(t, db.Reset())
 	resetTestTable(db)
 
 	t.Run(`.Id.Not == 0`, func(t *testing.T) {

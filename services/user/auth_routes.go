@@ -34,7 +34,7 @@ func (s *Server) loginRoute(w http.ResponseWriter, r *http.Request) {
 	// parse request JSON
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Error("Could not decode JSON to login")
+		log.Errorw("Could not decode JSON to login", "error", err)
 		handlers.JSONMsg(w, r, 400, "Invalid request JSON")
 		return
 	}
