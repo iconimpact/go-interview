@@ -19,14 +19,14 @@ func main() {
 	// open database
 	db, err := storage.NewDB(cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password, cfg.DB.Name, cfg.DB.SSLMode)
 	if err != nil {
-		log.Error(err, "database postgres new")
+		log.Errorw("error connecting to postgres database", "error", err)
 		os.Exit(1)
 	}
 
 	if schemaPath != nil && *schemaPath != "" {
 		err = db.Init(*schemaPath)
 		if err != nil {
-			log.Error(err, "database init")
+			log.Errorw("error initializing database schema", "error", err)
 			os.Exit(1)
 		}
 	}

@@ -34,7 +34,7 @@ type userCreateRequest struct {
 func (s *Server) userCreateRoute(w http.ResponseWriter, r *http.Request) {
 	var req userCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Error("Could not decode JSON to create User")
+		log.Errorw("Could not decode JSON to create User", "error", err)
 		handlers.JSONMsg(w, r, 400, "Invalid request JSON")
 		return
 	}
@@ -49,7 +49,7 @@ func (s *Server) userCreateRoute(w http.ResponseWriter, r *http.Request) {
 
 	err := user.Insert(s.db, s.cache)
 	if err != nil {
-		log.Error("user.Insert err:", err)
+		log.Errorw("error inserting user", "error", err)
 		handlers.JSONMsgErr(w, r, err, "Could not create User")
 		return
 	}
@@ -84,7 +84,7 @@ func (s *Server) userGetRoute(w http.ResponseWriter, r *http.Request) {
 	// parse request JSON
 	var req userGetRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Error("Could not decode JSON to get User")
+		log.Errorw("Could not decode JSON to get User", "error", err)
 		handlers.JSONMsg(w, r, 400, "Invalid request JSON")
 		return
 	}
@@ -92,7 +92,7 @@ func (s *Server) userGetRoute(w http.ResponseWriter, r *http.Request) {
 	// load the User
 	user, err := userlib.UserByID(req.ID, s.db)
 	if err != nil {
-		log.Error("userlib.UserByID err:", err)
+		log.Errorw("unable to find user", "error", err)
 		handlers.JSONMsgErr(w, r, err, "Could not update User")
 		return
 	}
@@ -100,7 +100,7 @@ func (s *Server) userGetRoute(w http.ResponseWriter, r *http.Request) {
 	// remove sensitive data
 	user = removeSensitiveDataFromUser(user)
 
-	log.Verbose("Got User with ID", user.ID)
+	log.Infow("Got User", "userID", user.ID)
 	handlers.JSONMsg(w, r, 200, userResponse{
 		User: user,
 	})
@@ -137,7 +137,7 @@ func (s *Server) userDeleteRoute(w http.ResponseWriter, r *http.Request) {
 	// parse request JSON
 	var req userDeleteRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Error("Could not decode JSON to delete Users")
+		log.Errorw("Could not decode JSON to delete Users", "error", err)
 		handlers.JSONMsg(w, r, 400, "Invalid request JSON")
 		return
 	}
@@ -145,7 +145,7 @@ func (s *Server) userDeleteRoute(w http.ResponseWriter, r *http.Request) {
 	// load the User
 	user, err := userlib.UserByID(req.ID, s.db)
 	if err != nil {
-		log.Error("userlib.UserById err:", err)
+		log.Errorw("unable to find user", "error", err)
 		handlers.JSONMsgErr(w, r, err, "Could not delete User")
 		return
 	}
@@ -153,7 +153,7 @@ func (s *Server) userDeleteRoute(w http.ResponseWriter, r *http.Request) {
 	// delete the User
 	err = user.Delete(s.db)
 	if err != nil {
-		log.Error("userlib.Delete err:", err)
+		log.Errorw("unable to delete user", "error", err)
 		handlers.JSONMsgErr(w, r, err, "Could not delete User")
 		return
 	}

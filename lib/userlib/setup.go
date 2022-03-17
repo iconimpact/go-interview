@@ -1,12 +1,12 @@
 package userlib
 
 import (
-	"github.com/iconmobile-dev/go-core/logger"
 	"github.com/iconmobile-dev/go-interview/config"
 	"github.com/iconmobile-dev/go-interview/lib/bootstrap"
+	"go.uber.org/zap"
 )
 
-var log logger.Logger
+var log *zap.SugaredLogger
 var cfg config.Config
 var cachePrefix = "gateway"
 

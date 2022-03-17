@@ -4,14 +4,14 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/iconmobile-dev/go-core/logger"
 	"github.com/iconmobile-dev/go-interview/config"
 	"github.com/iconmobile-dev/go-interview/lib/bootstrap"
 	"github.com/iconmobile-dev/go-interview/lib/handlers"
 	"github.com/iconmobile-dev/go-interview/lib/storage"
+	"go.uber.org/zap"
 )
 
-var log logger.Logger
+var log *zap.SugaredLogger
 var cfg config.Config
 
 // SetupLoggerAndConfig sets the global logger and config dependency

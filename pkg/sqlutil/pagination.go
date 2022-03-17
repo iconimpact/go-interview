@@ -13,7 +13,6 @@ func UseLimitOffsetPagination(q sq.SelectBuilder, p LimitOffsetPagination) sq.Se
 	switch {
 	case p.Limit > 0:
 		q = q.Limit(uint64(p.Limit))
-		break
 	case p.Limit < 0:
 		break
 	default:

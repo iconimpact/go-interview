@@ -86,7 +86,7 @@ func (u *User) Update(oldHashedPassword string, oldPassword *string, db *storage
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 		if err != nil {
-			log.Error("bcrypt.GenerateFromPassword err:", err)
+			log.Errorw("error generating password", "error", err)
 			return errors.E(err, errors.Internal, "Internal server error")
 		}
 		u.Password = string(hashedPassword)
