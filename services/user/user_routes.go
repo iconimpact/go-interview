@@ -100,7 +100,7 @@ func (s *Server) userGetRoute(w http.ResponseWriter, r *http.Request) {
 	// remove sensitive data
 	user = removeSensitiveDataFromUser(user)
 
-	log.Verbose("Got User with ID", user.ID)
+	log.Infow("Got User with ID", user.ID)
 	handlers.JSONMsg(w, r, 200, userResponse{
 		User: user,
 	})

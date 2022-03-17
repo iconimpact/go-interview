@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 		log.Error(err, "test database postgres new")
 		os.Exit(1)
 	}
-	log.Verbose("connected to Postgres at", cfg.DB.Host)
+	log.Infow("connected to Postgres at", cfg.DB.Host)
 
 	err = db.Reset()
 	if err != nil {
@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 		log.Error(err, "test cache database redis new")
 		os.Exit(1)
 	}
-	log.Verbose("connected to redis at", cfg.DB.Host)
+	log.Infow("connected to redis at", cfg.DB.Host)
 
 	err = cache.Reset()
 	if err != nil {

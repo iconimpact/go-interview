@@ -55,7 +55,7 @@ func JSONMsg(w http.ResponseWriter, r *http.Request, status int, v interface{}) 
 		}
 	}
 	if ms := ElapsedMilliseconds(t2); ms > 0 {
-		log.Verbose("JSONMsg: JSON Marshal took", ms, "ms")
+		log.Infow("JSONMsg: JSON Marshal took", ms, "ms")
 	}
 	t3 := time.Now()
 
@@ -74,7 +74,7 @@ func JSONMsg(w http.ResponseWriter, r *http.Request, status int, v interface{}) 
 		log.Error(err)
 	}
 	if ms := ElapsedMilliseconds(t3); ms > 0 {
-		log.Verbose("JSONMsg: writing body took", ms, "ms")
+		log.Infow("JSONMsg: writing body took", ms, "ms")
 	}
 }
 
@@ -117,7 +117,7 @@ func RawJSON(w http.ResponseWriter, req *http.Request, status int, reader io.Rea
 		}
 
 		if ms := ElapsedMilliseconds(t1); ms > 0 {
-			log.Verbose("RawJSON: GZIP compression took", ms, "ms")
+			log.Infow("RawJSON: GZIP compression took", ms, "ms")
 		}
 	} else {
 		// normal response
