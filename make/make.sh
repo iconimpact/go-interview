@@ -3,104 +3,113 @@
 set -eox pipefail
 
 function test-local() {
-  set +x
+    set +x
 
-  docker-compose -f make/docker-compose-dev.yml down --remove-orphans && \
-  docker-compose -f make/docker-compose-dev.yml up --build -d
+    docker-compose -f make/docker-compose-dev.yml down --remove-orphans && \
+    docker-compose -f make/docker-compose-dev.yml up --build -d
 
-  export CONFIG_FILE=$(pwd)/config/config_dev.toml
+    export CONFIG_FILE=$(pwd)/config/config_dev.toml
 
-  test
+    test
 }
 
 function test() {
-  set +x
-  set -e # exit if a command fails
+    set +x
+    set -e # exit if a command fails
 
-  PKG_LIST=$(go list ./... | grep -v /vendor/)
-  COVERAGE_DIR="${COVERAGE_DIR:-.coverage}"
+    PKG_LIST=$(go list ./... | grep -v /vendor/ | grep -v /docs/swagger)
+    COVERAGE_DIR="${COVERAGE_DIR:-.coverage}"
 
-  echo "tyding mods"
-  go mod tidy
+    echo "Run go mod tidy"
+    go mod tidy -v
 
-  echo "Formating and linting ..."
-  go fmt $PKG_LIST
+    echo "Run formating"
+    go fmt $PKG_LIST
 
-  # for CI
-  GOPATH=$1
-  if [ -z "$GOPATH" ]; then
-      golint -set_exit_status $PKG_LIST
-  else
-      $GOPATH/bin/golint -set_exit_status $PKG_LIST
-  fi
+    echo "Run golangci-lint ..."
+    golangci-lint run ./...
 
-  echo "Running tests ..."
+    # Remove the coverage files directory
+    if [ -d "$COVERAGE_DIR" ]; then rm -Rf "$COVERAGE_DIR"; fi
 
-  # stop tests at first test fail
-  TFAILMARKER="FAIL:"
-  go test $PKG_LIST -v -count=1 -p=1 | { IFS=''; while read line; do
-      echo "$line"
-      if [ -z "$line" ]; then
-          continue
-      fi
+    # run race by default
 
-      if [ -z "${line##*$TFAILMARKER*}" ] ; then
-          echo "🚨 Test FAIL match, exit"
-          exit 1
-      fi
-  done }
+    RACEFLAG="-race"
 
-  echo "Running code coverage ..."
+    # script race on CI
+    SKIPRACEFLAG=$1
+    if [ -n "$SKIPRACEFLAG" ]; then
+    RACEFLAG=""
+    fi
+    echo "RACEFLAG=$RACEFLAG"
 
-  # Create the coverage files directory
-  mkdir -p "$COVERAGE_DIR";
+    echo "Running tests and code coverage ..."
 
-  # Create a coverage file for each package
-  # test minim coverage
-  MINCOVERAGE=75
+    # Create the coverage files directory
+    mkdir -p "$COVERAGE_DIR";
 
-  for package in $PKG_LIST; do
-      pkgcov=$(go test -covermode=count -coverprofile "${COVERAGE_DIR}/${package##*/}.cov" "$package")
-      # echo $pkgcov
+    # Create a coverage file for each package
+    # test minim coverage
+    MINCOVERAGE=71
 
-      case $pkgcov in
-          *coverage:*)
-              pcoverage=$(echo $pkgcov| grep "coverage" | sed -E "s/.*coverage: ([0-9]*\.[0-9]+)\% of statements/\1/g")
-              # echo "coverage: $pcoverage% of $package"
+    # stop tests at first test fail
+    TFAILMARKER="FAIL:"
+    REGEXCOVERAGE="^coverage:"
 
-              if [ $(echo ${pcoverage%%.*}) -lt $MINCOVERAGE ] ; then
-                  echo "🚨 Test coverage of $package is $pcoverage%"
-                  echo "FAIL"
-                  exit 1
-              else
-                  echo "🟢 Test coverage of $package is $pcoverage%"
-              fi
-              ;;
-          *)
-              echo "➖ No tests for $package"
-              ;;
-      esac
-  done
+    for package in $PKG_LIST; do
+        go test $RACEFLAG -covermode=count -coverprofile "${COVERAGE_DIR}/${package##*/}.cov" "$package" -v -count=1 -p=1 | { IFS=''; while read -r line; do
+            echo "$line"
 
-  # Merge the coverage profile files
-  echo 'mode: count' > "${COVERAGE_DIR}"/coverage.cov
-  for fcov in "${COVERAGE_DIR}"/*.cov
-  do
-      if [ $fcov != "${COVERAGE_DIR}/coverage.cov" ]; then
-          tail -q -n +2 $fcov >> "${COVERAGE_DIR}"/coverage.cov
-      fi
-  done
+            if [ -z "$line" ]; then
+                continue
+            fi
+
+            if [ -z "${line##*$TFAILMARKER*}" ] ; then
+                exit 10
+            fi
+
+            if [[ "${line}" =~ $REGEXCOVERAGE ]] ; then
+                pcoverage=$(echo "$line"| grep "coverage" | sed -E "s/.*coverage: ([0-9]*\.[0-9]+)\% of statements/\1/g")
+
+                if [ $(echo ${pcoverage%%.*}) -lt $MINCOVERAGE ] ; then
+                    echo ""
+                    echo "🚨 Test coverage of $package is $pcoverage%"
+                    echo "FAIL: min coverage is $MINCOVERAGE%"
+                    echo ""
+                    exit 11
+                else
+                    echo ""
+                    echo "🟢 Test coverage of $package is $pcoverage%"
+                    echo ""
+                fi
+            fi
+        done }
+    done
+
+    # Merge the coverage profile files
+    echo 'mode: count' > "${COVERAGE_DIR}"/coverage.cov
+    for fcov in "${COVERAGE_DIR}"/*.cov
+    do
+        if [ $fcov != "${COVERAGE_DIR}/coverage.cov" ]; then
+            tail -q -n +2 $fcov >> "${COVERAGE_DIR}"/coverage.cov
+        fi
+    done
 
 
-  # global code coverage
-  pcoverage=$(go tool cover -func="${COVERAGE_DIR}"/coverage.cov | grep 'total:' | sed -E "s/^total:.*\(statements\)[[:space:]]*([0-9]*\.[0-9]+)\%.*/\1/g")
-  echo "coverage: $pcoverage% of project"
+    # global code coverage
+    pcoverage=$(go tool cover -func="${COVERAGE_DIR}"/coverage.cov | grep 'total:' | sed -E "s/^total:.*\(statements\)[[:space:]]*([0-9]*\.[0-9]+)\%.*/\1/g")
+    echo "coverage: $pcoverage% of project"
 
-  if [ $(echo ${pcoverage%%.*}) -lt $MINCOVERAGE ] ; then
-      echo "🚨 Test coverage of project is $pcoverage%"
-      echo "FAIL"
-      exit 1
-  else
-      echo "🟢 Test coverage of project is $pcoverage%"
-  fi
+
+    if [ $(echo ${pcoverage%%.*}) -lt $MINCOVERAGE ] ; then
+        echo ""
+        echo "🚨 Test coverage of project is $pcoverage%"
+        echo "FAIL: min coverage is $MINCOVERAGE%"
+        echo ""
+        exit 12
+    else
+        echo ""
+        echo "🟢 Test coverage of project is $pcoverage%"
+        echo ""
+    fi
 }
